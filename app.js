@@ -248,5 +248,28 @@ function closeModal() {
   modalOverlay.classList.add('hidden');
 }
 
+    function getLeaderboard() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveResult(moves) {
+  const results = getLeaderboard();
+  results.push({ moves: moves, date: new Date().toISOString() });
+  results.sort(function (a, b) { return a.moves - b.moves; });
+  const top = results.slice(0, 10);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(top));
+  } catch (e) {
+    // localStorage может быть недоступен (приватный режим, переполнение)
+  }
+}
   
 })();

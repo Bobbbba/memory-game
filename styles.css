@@ -148,7 +148,7 @@ body {
 }
 
 .card-back::after {
-  content: '?';
+  content: 'XXXX';
   font-weight: 700;
 }
 

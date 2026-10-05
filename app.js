@@ -198,7 +198,18 @@
         resetSelection();
       }, FLIP_BACK_DELAY);
     }
-  }
+    }
+    
+    function resetSelection() {
+  state.firstCard = null;
+  state.secondCard = null;
+  state.lockBoard = false;
+}
+
+function updateStats() {
+  movesEl.textContent = String(state.moves);
+  pairsEl.textContent = state.matchedPairs + ' / ' + state.totalPairs;
+}
 
   
 })();

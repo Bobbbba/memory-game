@@ -165,10 +165,6 @@
 
 
 
-        function init() {
-            buildUl();
-            startNewGame();
-        }
 
 
      }   

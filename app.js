@@ -209,6 +209,43 @@
 function updateStats() {
   movesEl.textContent = String(state.moves);
   pairsEl.textContent = state.matchedPairs + ' / ' + state.totalPairs;
+    }
+    
+    function showWinModal() {
+  clear(modalContent);
+
+  const h2 = el('h2', null, '🎉 Победа!');
+  const p = el('p', null, 'Вы нашли все пары!');
+  const highlight = el('div', 'modal-highlight', 'Ходов: ' + state.moves);
+
+  const btnWrap = el('div', 'header-buttons');
+  btnWrap.style.justifyContent = 'center';
+
+  const againBtn = el('button', 'btn', 'Играть снова');
+  againBtn.type = 'button';
+  againBtn.addEventListener('click', startNewGame);
+
+  const boardBtn = el('button', 'btn btn-secondary', 'Таблица лидеров');
+  boardBtn.type = 'button';
+  boardBtn.addEventListener('click', function () {
+    closeModal();
+    openLeaderboard(true);
+  });
+
+  btnWrap.appendChild(againBtn);
+  btnWrap.appendChild(boardBtn);
+
+  modalContent.appendChild(h2);
+  modalContent.appendChild(p);
+  modalContent.appendChild(highlight);
+  modalContent.appendChild(btnWrap);
+
+  saveResult(state.moves);
+  modalOverlay.classList.remove('hidden');
+}
+
+function closeModal() {
+  modalOverlay.classList.add('hidden');
 }
 
   

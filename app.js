@@ -270,6 +270,62 @@ function saveResult(moves) {
   } catch (e) {
     // localStorage может быть недоступен (приватный режим, переполнение)
   }
+    }
+    
+    function openLeaderboard(fromWin) {
+  clear(leaderboardOverlay);
+
+  const modal = el('div', 'modal');
+  const h2 = el('h2', null, '🏆 Таблица лидеров');
+  modal.appendChild(h2);
+
+  const results = getLeaderboard();
+
+  if (results.length === 0) {
+    modal.appendChild(el('p', 'leaderboard-empty', 'Пока нет результатов. Сыграйте первую игру!'));
+  } else {
+    const list = el('ul', 'leaderboard-list');
+    results.forEach(function (item, index) {
+      const li = el('li');
+      const left = el('span');
+      left.appendChild(el('span', 'rank', '#' + (index + 1)));
+      left.appendChild(document.createTextNode('Игра'));
+      const moves = el('span', 'moves', item.moves + ' ходов');
+      li.appendChild(left);
+      li.appendChild(moves);
+      list.appendChild(li);
+    });
+    modal.appendChild(list);
+  }
+
+  const btnWrap = el('div', 'header-buttons');
+  btnWrap.style.justifyContent = 'center';
+
+  const closeBtn = el('button', 'btn', 'Закрыть');
+  closeBtn.type = 'button';
+  closeBtn.addEventListener('click', closeLeaderboard);
+  btnWrap.appendChild(closeBtn);
+
+  if (fromWin) {
+    const againBtn = el('button', 'btn btn-secondary', 'Новая игра');
+    againBtn.type = 'button';
+    againBtn.addEventListener('click', function () {
+      closeLeaderboard();
+      startNewGame();
+    });
+    btnWrap.appendChild(againBtn);
+  }
+
+  modal.appendChild(btnWrap);
+
+  leaderboardOverlay.appendChild(modal);
+  leaderboardOverlay.classList.remove('hidden');
+}
+
+function closeLeaderboard() {
+  if (leaderboardOverlay) {
+    leaderboardOverlay.classList.add('hidden');
+  }
 }
   
 })();

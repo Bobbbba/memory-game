@@ -326,6 +326,17 @@ function closeLeaderboard() {
   if (leaderboardOverlay) {
     leaderboardOverlay.classList.add('hidden');
   }
+    }
+    
+    function init() {
+  buildUI();
+  startNewGame();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
 }
   
 })();

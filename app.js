@@ -19,7 +19,33 @@
     while (node.firstChild) {
       node.removeChild(node.firstChild);
     }
+    }
+    
+    // ---------- Фабрика модальных окон ----------
+  function createModal() {
+    const overlay = el('div', 'modal-overlay hidden');
+    const content = el('div', 'modal');
+    overlay.appendChild(content);
+
+    function close() {
+      overlay.classList.add('hidden');
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) close();
+    });
+
+    function open(buildContent) {
+      clear(content);
+      buildContent(content, close);
+      overlay.classList.remove('hidden');
+    }
+
+    document.body.appendChild(overlay);
+
+    return { open: open, close: close, content: content };
   }
+
 
   // ---------- Состояние игры ----------
   const state = {
@@ -33,7 +59,8 @@
   };
 
   // ---------- DOM-ссылки (создаются динамически) ----------
-  let boardEl, movesEl, pairsEl, modalOverlay, modalContent, leaderboardOverlay;
+  let boardEl, movesEl, pairsEl;
+  let winModal, leaderboardModal;
 
   // ---------- Построение интерфейса ----------
   function buildUI() {
@@ -83,20 +110,10 @@
     app.appendChild(boardEl);
     document.body.appendChild(app);
 
-    // --- Модальные окна ---
-    modalOverlay = el('div', 'modal-overlay hidden');
-    modalOverlay.addEventListener('click', function (e) {
-      if (e.target === modalOverlay) closeModal();
-    });
-    modalContent = el('div', 'modal');
-    modalOverlay.appendChild(modalContent);
-    document.body.appendChild(modalOverlay);
-
-    leaderboardOverlay = el('div', 'modal-overlay hidden');
-    leaderboardOverlay.addEventListener('click', function (e) {
-      if (e.target === leaderboardOverlay) closeLeaderboard();
-    });
-    document.body.appendChild(leaderboardOverlay);
+    
+      
+       winModal = createModal();
+       leaderboardModal = createModal();
   }
 
   // ---------- Логика игры ----------
@@ -118,8 +135,8 @@
   }
 
   function startNewGame() {
-    closeModal();
-    closeLeaderboard();
+    if (winModal) winModal.close();
+    if (leaderboardModal) leaderboardModal.close();
     state.firstCard = null;
     state.secondCard = null;
     state.lockBoard = false;
@@ -211,41 +228,35 @@ function updateStats() {
   pairsEl.textContent = state.matchedPairs + ' / ' + state.totalPairs;
     }
     
-    function showWinModal() {
-  clear(modalContent);
-
-  const h2 = el('h2', null, '🎉 Победа!');
-  const p = el('p', null, 'Вы нашли все пары!');
-  const highlight = el('div', 'modal-highlight', 'Ходов: ' + state.moves);
-
-  const btnWrap = el('div', 'header-buttons');
-  btnWrap.style.justifyContent = 'center';
-
-  const againBtn = el('button', 'btn', 'Играть снова');
-  againBtn.type = 'button';
-  againBtn.addEventListener('click', startNewGame);
-
-  const boardBtn = el('button', 'btn btn-secondary', 'Таблица лидеров');
-  boardBtn.type = 'button';
-  boardBtn.addEventListener('click', function () {
-    closeModal();
-    openLeaderboard(true);
-  });
-
-  btnWrap.appendChild(againBtn);
-  btnWrap.appendChild(boardBtn);
-
-  modalContent.appendChild(h2);
-  modalContent.appendChild(p);
-  modalContent.appendChild(highlight);
-  modalContent.appendChild(btnWrap);
-
+   function showWinModal() {
   saveResult(state.moves);
-  modalOverlay.classList.remove('hidden');
-}
 
-function closeModal() {
-  modalOverlay.classList.add('hidden');
+  winModal.open(function (content, close) {
+    content.appendChild(el('h2', null, '🎉 Победа!'));
+    content.appendChild(el('p', null, 'Вы нашли все пары!'));
+    content.appendChild(el('div', 'modal-highlight', 'Ходов: ' + state.moves));
+
+    const btnWrap = el('div', 'header-buttons');
+    btnWrap.style.justifyContent = 'center';
+
+    const againBtn = el('button', 'btn', 'Играть снова');
+    againBtn.type = 'button';
+    againBtn.addEventListener('click', function () {
+      close();
+      startNewGame();
+    });
+
+    const boardBtn = el('button', 'btn btn-secondary', 'Таблица лидеров');
+    boardBtn.type = 'button';
+    boardBtn.addEventListener('click', function () {
+      close();
+      openLeaderboard(true);
+    });
+
+    btnWrap.appendChild(againBtn);
+    btnWrap.appendChild(boardBtn);
+    content.appendChild(btnWrap);
+  });
 }
 
     function getLeaderboard() {
@@ -273,60 +284,53 @@ function saveResult(moves) {
     }
     
     function openLeaderboard(fromWin) {
-  clear(leaderboardOverlay);
+  leaderboardModal.open(function (content, close) {
+    content.appendChild(el('h2', null, '🏆 Таблица лидеров'));
 
-  const modal = el('div', 'modal');
-  const h2 = el('h2', null, '🏆 Таблица лидеров');
-  modal.appendChild(h2);
+    const results = getLeaderboard();
 
-  const results = getLeaderboard();
+    if (results.length === 0) {
+      content.appendChild(el('p', 'leaderboard-empty', 'Пока нет результатов. Сыграйте первую игру!'));
+    } else {
+      const list = el('ul', 'leaderboard-list');
+      results.forEach(function (item, index) {
+        const li = el('li');
 
-  if (results.length === 0) {
-    modal.appendChild(el('p', 'leaderboard-empty', 'Пока нет результатов. Сыграйте первую игру!'));
-  } else {
-    const list = el('ul', 'leaderboard-list');
-    results.forEach(function (item, index) {
-      const li = el('li');
-      const left = el('span');
-      left.appendChild(el('span', 'rank', '#' + (index + 1)));
-      left.appendChild(document.createTextNode('Игра'));
-      const moves = el('span', 'moves', item.moves + ' ходов');
-      li.appendChild(left);
-      li.appendChild(moves);
-      list.appendChild(li);
-    });
-    modal.appendChild(list);
-  }
+        const left = el('span');
+        left.appendChild(el('span', 'rank', '#' + (index + 1)));
+        left.appendChild(document.createTextNode('Игра'));
 
-  const btnWrap = el('div', 'header-buttons');
-  btnWrap.style.justifyContent = 'center';
+        const moves = el('span', 'moves', item.moves + ' ходов');
 
-  const closeBtn = el('button', 'btn', 'Закрыть');
-  closeBtn.type = 'button';
-  closeBtn.addEventListener('click', closeLeaderboard);
-  btnWrap.appendChild(closeBtn);
-
-  if (fromWin) {
-    const againBtn = el('button', 'btn btn-secondary', 'Новая игра');
-    againBtn.type = 'button';
-    againBtn.addEventListener('click', function () {
-      closeLeaderboard();
-      startNewGame();
-    });
-    btnWrap.appendChild(againBtn);
-  }
-
-  modal.appendChild(btnWrap);
-
-  leaderboardOverlay.appendChild(modal);
-  leaderboardOverlay.classList.remove('hidden');
-}
-
-function closeLeaderboard() {
-  if (leaderboardOverlay) {
-    leaderboardOverlay.classList.add('hidden');
-  }
+        li.appendChild(left);
+        li.appendChild(moves);
+        list.appendChild(li);
+      });
+      content.appendChild(list);
     }
+
+    const btnWrap = el('div', 'header-buttons');
+    btnWrap.style.justifyContent = 'center';
+
+    const closeBtn = el('button', 'btn', 'Закрыть');
+    closeBtn.type = 'button';
+    closeBtn.addEventListener('click', close);
+    btnWrap.appendChild(closeBtn);
+
+    if (fromWin) {
+      const againBtn = el('button', 'btn btn-secondary', 'Новая игра');
+      againBtn.type = 'button';
+      againBtn.addEventListener('click', function () {
+        close();
+        startNewGame();
+      });
+      btnWrap.appendChild(againBtn);
+    }
+
+    content.appendChild(btnWrap);
+  });
+}
+    
     
     function init() {
   buildUI();

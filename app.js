@@ -56,6 +56,7 @@
     moves: 0,
     matchedPairs: 0,
     totalPairs: PAIRS_COUNT,
+    resultSaved: false,
   };
 
   // ---------- DOM-ссылки (создаются динамически) ----------
@@ -135,17 +136,19 @@
   }
 
   function startNewGame() {
-    if (winModal) winModal.close();
-    if (leaderboardModal) leaderboardModal.close();
-    state.firstCard = null;
-    state.secondCard = null;
-    state.lockBoard = false;
-    state.moves = 0;
-    state.matchedPairs = 0;
+  if (winModal) winModal.close();
+  if (leaderboardModal) leaderboardModal.close();
 
-    updateStats();
-    clear(boardEl);
-    state.deck = createDeck();
+  state.firstCard = null;
+  state.secondCard = null;
+  state.lockBoard = false;
+  state.moves = 0;
+  state.matchedPairs = 0;
+  state.resultSaved = false;   // ← сбрасываем при новой партии
+
+  updateStats();
+  clear(boardEl);
+  state.deck = createDeck();
 
     const columns = Math.ceil(Math.sqrt(state.deck.length));
     boardEl.style.gridTemplateColumns = 'repeat(' + columns + ', minmax(60px, 110px))';
@@ -272,16 +275,28 @@ function updateStats() {
 }
 
 function saveResult(moves) {
+  if (state.resultSaved) return;      // ← отсекаем повторный вызов
+  state.resultSaved = true;
+
   const results = getLeaderboard();
-  results.push({ moves: moves, date: new Date().toISOString() });
+  const date = new Date().toISOString();
+  const newEntry = { moves: moves, date: date };
+
+  const isDuplicate = results.some(function (item) {
+    return item.moves === newEntry.moves && item.date === newEntry.date;
+  });
+  if (isDuplicate) return;
+
+  results.push(newEntry);
   results.sort(function (a, b) { return a.moves - b.moves; });
   const top = results.slice(0, 10);
+
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(top));
   } catch (e) {
-    // localStorage может быть недоступен (приватный режим, переполнение)
+    // localStorage может быть недоступен
   }
-    }
+}
     
     function openLeaderboard(fromWin) {
   leaderboardModal.open(function (content, close) {
